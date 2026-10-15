@@ -11,7 +11,10 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "check-types": "tsc --noEmit -p tsconfig.json"
+    "check-types": "tsc --noEmit -p tsconfig.json",
+    "db:generate": "drizzle-kit generate",
+    "db:check": "drizzle-kit check",
+    "db:migrate": "node --env-file=../../infra/.env.migration ./node_modules/drizzle-kit/bin.cjs migrate"
   },
   "devDependencies": {
     "@lara/typescript-config": "workspace:*",
