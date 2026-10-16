@@ -48,6 +48,7 @@ export const tenants = pgTable(
       mode: "date",
     })
       .defaultNow()
+      .$onUpdateFn(() => sql`now()`)
       .notNull(),
   },
 

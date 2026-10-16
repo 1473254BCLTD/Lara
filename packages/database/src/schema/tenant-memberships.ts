@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import {
   check,
   index,
+  pgPolicy,
   pgTable,
   text,
   timestamp,
@@ -92,6 +93,7 @@ export const tenantMemberships = pgTable(
       mode: "date",
     })
       .defaultNow()
+      .$onUpdateFn(() => sql`now()`)
       .notNull(),
   },
 
@@ -140,8 +142,33 @@ export const tenantMemberships = pgTable(
         'disabled'
       )`,
     ),
+    /**
+     * Allow active staff to discover their own
+     * active memberships in active tenants.
+     *
+     * A selected tenant is not required.
+     */
+    pgPolicy("tenant_memberships_staff_self_select", {
+      for: "select",
+      to: "lara_app",
+
+      using: sql`
+        current_setting('app.actor_type', true) = 'staff'
+
+        AND ${table.userId} = NULLIF(
+          current_setting('app.actor_id', true),
+          ''
+        )::uuid
+
+        AND ${table.status} = 'active'
+
+        AND public.lara_actor_is_active()
+
+        AND public.lara_tenant_is_active(${table.tenantId})
+      `,
+    }),
   ],
-);
+).enableRLS();
 
 /**
  * Existing membership.

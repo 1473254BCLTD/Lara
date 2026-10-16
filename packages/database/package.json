@@ -14,12 +14,13 @@
     "check-types": "tsc --noEmit -p tsconfig.json",
     "db:generate": "drizzle-kit generate",
     "db:check": "drizzle-kit check",
-    "db:migrate": "node --env-file=../../infra/.env.migration ./node_modules/drizzle-kit/bin.cjs migrate"
+    "db:migrate": "node --env-file=../../infra/.env.migration ./scripts/migrate.mjs"
   },
   "devDependencies": {
     "@lara/typescript-config": "workspace:*",
     "@types/pg": "^8.23.1",
-    "drizzle-kit": "0.31.11"
+    "drizzle-kit": "0.31.11",
+    "vitest": "^5.0.5"
   },
   "dependencies": {
     "drizzle-orm": "0.45.4",

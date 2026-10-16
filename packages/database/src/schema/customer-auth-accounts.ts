@@ -105,6 +105,7 @@ export const customerAuthAccounts = pgTable(
       mode: "date",
     })
       .defaultNow()
+      .$onUpdateFn(() => sql`now()`)
       .notNull(),
   },
 

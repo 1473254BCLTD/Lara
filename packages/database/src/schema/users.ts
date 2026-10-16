@@ -93,6 +93,7 @@ export const users = pgTable(
       mode: "date",
     })
       .defaultNow()
+      .$onUpdateFn(() => sql`now()`)
       .notNull(),
   },
 

@@ -12,7 +12,10 @@ coverage/
 # Environment variables and secrets
 .env
 .env.*
+
+# Allow version-controlled environment templates
 !.env.example
+!.env.migration.example
 
 # macOS
 .DS_Store

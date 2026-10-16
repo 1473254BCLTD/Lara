@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import {
   check,
   index,
+  pgPolicy,
   pgTable,
   timestamp,
   uniqueIndex,
@@ -12,6 +13,7 @@ import {
 
 import { tenants } from "./tenants.js";
 import { customerAuthAccounts } from "./customer-auth-accounts.js";
+import { tenantMemberships } from "./tenant-memberships.js";
 
 /**
  * Tenant-specific customer profiles.
@@ -94,6 +96,7 @@ export const customers = pgTable(
       mode: "date",
     })
       .defaultNow()
+      .$onUpdateFn(() => sql`now()`)
       .notNull(),
   },
 
@@ -160,6 +163,80 @@ export const customers = pgTable(
       "customers_email_normalized",
       sql`${table.email} = lower(btrim(${table.email}))`,
     ),
+
+    /**
+     * Customer self-access.
+     *
+     * Customers can read only their own linked
+     * profile within the selected active tenant.
+     */
+    pgPolicy("customers_customer_self_select", {
+      for: "select",
+      to: "lara_app",
+
+      using: sql`
+        current_setting('app.actor_type', true) = 'customer'
+
+        AND ${table.tenantId} = NULLIF(
+          current_setting('app.tenant_id', true),
+          ''
+        )::uuid
+
+        AND ${table.authAccountId} = NULLIF(
+          current_setting('app.actor_id', true),
+          ''
+        )::uuid
+
+        AND public.lara_actor_is_active()
+
+        AND public.lara_tenant_is_active(${table.tenantId})
+      `,
+    }),
+
+    /**
+     * Staff access to tenant customers.
+     *
+     * Active owners, administrators and staff
+     * can read customers belonging to their
+     * selected active tenant.
+     */
+    pgPolicy("customers_staff_select", {
+      for: "select",
+      to: "lara_app",
+
+      using: sql`
+        current_setting('app.actor_type', true) = 'staff'
+
+        AND ${table.tenantId} = NULLIF(
+          current_setting('app.tenant_id', true),
+          ''
+        )::uuid
+
+        AND public.lara_actor_is_active()
+
+        AND public.lara_tenant_is_active(${table.tenantId})
+
+        AND EXISTS (
+          SELECT 1
+          FROM ${tenantMemberships}
+          WHERE
+            ${tenantMemberships.tenantId} = ${table.tenantId}
+
+            AND ${tenantMemberships.userId} = NULLIF(
+              current_setting('app.actor_id', true),
+              ''
+            )::uuid
+
+            AND ${tenantMemberships.status} = 'active'
+
+            AND ${tenantMemberships.role} IN (
+              'owner',
+              'admin',
+              'staff'
+            )
+        )
+      `,
+    }),
   ],
 ).enableRLS();
 
