@@ -394,17 +394,46 @@ Verified scenarios included:
 
 The initial manual security tests passed.
 
-Automated integration tests are still required.
+### Automated integration tests
 
-Future tests must use an isolated database and must
-not modify the development database.
+The PostgreSQL integration suite uses Vitest against the isolated `lara_test` database.
+
+Run the complete suite from the monorepo root:
+
+```bash
+pnpm test:integration
+```
+
+Run the database workspace suite directly:
+
+```bash
+pnpm --filter @lara/database test
+```
+
+Type-check the integration tests:
+
+```bash
+pnpm --filter @lara/database exec tsc --project tsconfig.test.json --noEmit --pretty false
+```
+
+The test infrastructure is defined in `infra/compose.test.yaml` and `infra/.env.test`. RLS assertions use the restricted `lara_app` role, while `lara_migrator` prepares and cleans up test fixtures.
+
+Automated coverage includes:
+
+- Tenant membership isolation and missing authentication context.
+- Disabled staff accounts and disabled memberships.
+- Customer profile isolation and disabled customer authentication accounts.
+- Cross-tenant access denial and multiple tenant memberships.
+- Suspended-tenant access restrictions for staff and customers.
+- Database privileges, RLS policies, security helper functions, and fixture safeguards.
+
+Run integration tests only against the isolated test database. Never run them against `lara_dev` or a production database.
 
 ## 11. Future Work
 
 The database foundation is established, but additional
 implementation is required for:
 
-- Automated RLS integration testing
 - Staff authentication
 - Customer authentication
 - Account and session management

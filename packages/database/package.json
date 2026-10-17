@@ -14,7 +14,8 @@
     "check-types": "tsc --noEmit -p tsconfig.json",
     "db:generate": "drizzle-kit generate",
     "db:check": "drizzle-kit check",
-    "db:migrate": "node --env-file=../../infra/.env.migration ./scripts/migrate.mjs"
+    "db:migrate": "node --env-file=../../infra/.env.migration ./scripts/migrate.mjs",
+    "test": "vitest run --config vitest.config.ts"
   },
   "devDependencies": {
     "@lara/typescript-config": "workspace:*",
