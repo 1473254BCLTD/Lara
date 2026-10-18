@@ -362,9 +362,13 @@ The following checks passed locally:
 - Integration tests: 13 files and 19 passing tests.
 - Disposable verification infrastructure cleanup.
 
-GitHub Actions execution on a fresh hosted runner remains unverified.
+GitHub Actions CI passed on `develop` on October 18, 2026.
 
-The CI milestone is not complete until remote execution succeeds and its results are reviewed.
+GitHub Actions run: https://github.com/1473254BCLTD/Lara/actions/runs/39127408832
+
+The remote Vitest report confirms 13 passing test files and 19 passing tests, with zero failures.
+
+The GitHub Actions run was reported successful, with all workflow steps green. Remote CI verification is complete for this milestone.
 
 ### Current limitations
 
@@ -387,7 +391,6 @@ Future work includes:
 - Background-worker tests for email and webhook processing.
 - Booking, pass, and payment integration tests.
 - End-to-end tests for important customer and staff workflows.
-- Verify successful GitHub Actions execution on a fresh hosted runner.
 - Expand CI coverage as additional application tests are implemented.
 - Additional database tests as new tenant-owned tables, permissions, and RLS policies are introduced.
 

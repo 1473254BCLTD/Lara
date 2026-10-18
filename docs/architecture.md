@@ -248,7 +248,17 @@ The GitHub Actions workflow is defined in:
 The workflow has passed local configuration validation,
 workspace checks, protected migrations, and integration tests.
 
-Execution on a fresh GitHub-hosted runner remains pending.
+GitHub Actions CI successfully executed on a GitHub-hosted
+runner on October 18, 2026, using the `develop` branch.
+
+The verified integration-test results were 13 passing
+test files and 19 passing tests.
+
+GitHub Actions run:
+https://github.com/1473254BCLTD/Lara/actions/runs/39127408832
+
+The shared PostgreSQL integration-test infrastructure
+is now operational in both local development and CI.
 
 Detailed testing procedures and CI verification are documented
 in [testing.md](./testing.md).
