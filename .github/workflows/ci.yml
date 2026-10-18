@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js and pnpm
+        uses: pnpm/setup@v3
+        with:
+          node-version-file: .nvmrc
+          cache: true
+          require-lockfile: true
+
+      - name: Verify toolchain
+        run: |
+          node --version
+          pnpm --version
+
+      - name: Build workspace packages
+        run: pnpm build
+
+      - name: Check workspace TypeScript
+        run: pnpm check-types
+
+      - name: Check integration test TypeScript
+        run: |
+          pnpm --filter @lara/database exec tsc \
+            --project tsconfig.test.json \
+            --noEmit \
+            --pretty false
+
+      - name: Generate test database credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          test ! -e infra/.env.test
+
+          admin_password="$(openssl rand -hex 32)"
+          app_password="$(openssl rand -hex 32)"
+          migrator_password="$(openssl rand -hex 32)"
+
+          {
+            printf "POSTGRES_PASSWORD=%s\n" "$admin_password"
+            printf "DATABASE_PASSWORD=%s\n" "$app_password"
+            printf "MIGRATION_DATABASE_PASSWORD=%s\n" "$migrator_password"
+            printf "DATABASE_HOST=127.0.0.1\nDATABASE_PORT=5433\n"
+            printf "DATABASE_NAME=lara_test\nDATABASE_USER=lara_app\n"
+            printf "DATABASE_POOL_MAX=5\n"
+            printf "MIGRATION_DATABASE_HOST=127.0.0.1\nMIGRATION_DATABASE_PORT=5433\n"
+            printf "MIGRATION_DATABASE_NAME=lara_test\nMIGRATION_DATABASE_USER=lara_migrator\n"
+          } > infra/.env.test
+
+      - name: Start PostgreSQL test database
+        run: |
+          docker compose \
+            --env-file infra/.env.test \
+            -f infra/compose.test.yaml \
+            up -d --wait --wait-timeout 120 postgres
+
+          docker compose \
+            --env-file infra/.env.test \
+            -f infra/compose.test.yaml \
+            ps
+
+      - name: Apply protected test migrations
+        run: |
+          node --env-file=infra/.env.test \
+            packages/database/scripts/migrate.mjs \
+            --integration-test
+
+      - name: Run PostgreSQL integration tests
+        run: pnpm test:integration
+
+      - name: Clean up CI PostgreSQL
+        if: always()
+        shell: bash
+        run: |
+          if [ -f infra/.env.test ]; then
+            docker compose \
+              --env-file infra/.env.test \
+              -f infra/compose.test.yaml \
+              down --volumes --remove-orphans
+          fi

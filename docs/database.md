@@ -143,6 +143,56 @@ Verified properties:
 
 The disposable test container was removed afterward.
 
+### Test-only database initialization
+
+Local integration tests and GitHub Actions share the same
+PostgreSQL test provisioning infrastructure.
+
+The test environment is defined by:
+
+`infra/compose.test.yaml`
+
+PostgreSQL initialization is separated by responsibility:
+
+- `infra/postgres/init/01-create-roles.sh` provisions the
+  shared PostgreSQL roles and privileges.
+- `infra/test/postgres/init/02-mark-test-database.sh`
+  initializes the test-only database identity marker.
+
+The second script is mounted only by the test Compose
+configuration. It verifies that the database is `lara_test`
+and the PostgreSQL administrator is `lara` before executing.
+
+The identity marker is:
+
+`lara:integration-test-only:v1`
+
+PostgreSQL executes these scripts in filename order when
+initializing a fresh database cluster.
+
+Existing PostgreSQL volumes are not reinitialized when
+containers restart. Do not delete existing database volumes
+to force initialization.
+
+The protected migration runner independently verifies
+the test database identity, migration role, host, port,
+and explicit `--integration-test` argument.
+
+Local testing and GitHub Actions must use the same
+provisioning scripts and protected migration runner.
+
+The initialization process was verified against a fresh,
+disposable PostgreSQL 18 instance on October 18, 2026.
+Both scripts executed successfully, the database marker
+was verified, and the restricted role privileges matched
+the expected security configuration.
+
+The disposable verification environment was removed
+without affecting the existing development or test databases.
+
+Detailed integration-test procedures and CI configuration
+are documented in [testing.md](./testing.md).
+
 ## 4. Environment Configuration
 
 Application environment:
