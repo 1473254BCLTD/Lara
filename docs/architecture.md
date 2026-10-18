@@ -47,6 +47,7 @@ Application processes run natively under Node.js. Docker Compose provides local 
 | Application | Responsibility |
 |---|---|
 | apps/server | Central Express.js API |
+| Background worker (planned; workspace pending) | Separate native Node.js process for asynchronous jobs |
 | apps/admin | Tenant administration dashboard |
 | apps/booking-widget | Customer booking interface |
 | apps/pass-widget | Customer pass interface |
@@ -70,6 +71,21 @@ The root package manages workspace-wide commands. Turborepo coordinates tasks ac
 
 Applications should reuse shared packages instead of independently redefining common contracts, database access conventions, or configuration.
 
+### Shared package boundaries
+
+- `@lara/contracts` defines reusable Zod schemas and types for API requests, responses, and appropriate cross-process messages. Validation does not establish authentication or authorization.
+- `@lara/database` owns PostgreSQL configuration validation, connection management, Drizzle integration, schema definitions, migrations, and transaction-local security context.
+- `@lara/api-client` provides reusable typed HTTP communication with the Express API, using shared contracts where appropriate.
+- `@lara/utils` contains general-purpose utilities that do not require privileged application infrastructure.
+
+Frontend applications communicate with PostgreSQL through the Express API. They must not access the database directly or depend on backend database runtime utilities.
+
+The Express API and background worker are designed as independent Node.js processes. As each component is implemented, it must reuse shared infrastructure packages, initialize its own process-scoped database runtime, and manage its own startup and shutdown.
+
+The API and worker must use the restricted `lara_app` PostgreSQL role. Background processing must preserve applicable authorization and tenant-isolation requirements.
+
+Server-specific runtime configuration belongs to the Express application. Worker-specific runtime configuration belongs to the worker application. Shared infrastructure validation belongs to the package responsible for that infrastructure. Runtime secrets and process environment configuration do not belong in `@lara/contracts`.
+
 ## 4. Runtime and Component Boundaries
 
 ### API server
@@ -92,7 +108,9 @@ Shared contracts and UI components should be reused where appropriate without co
 
 The target architecture uses a separate Node.js background worker for asynchronous tasks, including emails and webhooks.
 
-Redis provides the job queue infrastructure consistently across development, CI, and production.
+Redis is the chosen job queue backend for development and production. CI will add Redis services when queue or worker tests require them. The current verified CI database integration environment provisions PostgreSQL only.
+
+As of October 18, 2026, the dedicated worker workspace has not been created. The worker is an established architectural component, not a completed implementation.
 
 The worker remains a separate process from the Express API so background processing does not need to execute inside API request handling.
 
@@ -216,7 +234,9 @@ The established deployment approach is:
 - Run the background worker as a separate native Node.js process.
 - Use PostgreSQL for persistent data.
 - Use Redis for background job processing.
-- Use Docker Compose for local database and Redis infrastructure.
+- Use Docker Compose for PostgreSQL and Redis in local development and for isolated test infrastructure in CI.
+- In production, run PostgreSQL 18 and Redis 8 as native host-installed services, without Docker.
+- Provide API and worker production configuration through protected process environments outside the repository. Local infra environment files are not production configuration.
 - Provision isolated CI test services using the existing Compose-based test configuration.
 - Keep application deployment independent of Docker containers.
 

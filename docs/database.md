@@ -195,7 +195,7 @@ are documented in [testing.md](./testing.md).
 
 ## 4. Environment Configuration
 
-Application environment:
+Local development application and infrastructure environment:
 
 `infra/.env`
 
@@ -219,6 +219,22 @@ Migration authentication requires the PostgreSQL role
 lara_migrator.
 
 The Express API and background worker must use lara_app.
+
+### Application runtime configuration
+
+The Express API and background worker are designed to run as independent native Node.js processes. Once implemented, each must create a process-scoped database runtime using `@lara/database` and close its own connections during shutdown.
+
+Application processes must not execute database migrations during startup. Migrations remain separate operations using `lara_migrator`.
+
+Local development uses environment configuration associated with `infra/`. The existing `infra/.env` contains infrastructure credentials as well as application database settings. API and worker processes should receive only the credentials necessary for their responsibilities.
+
+The application must never connect using the PostgreSQL administrative role `lara` or the migration role `lara_migrator`.
+
+In production, PostgreSQL runs as a native host-installed service. The API and worker receive configuration through protected process environments outside the repository. Application code must not depend on local `infra/` file paths.
+
+The same `DATABASE_*` variable names and database validation are used across development and production. The configuration source changes, not the database connection architecture.
+
+The isolated `infra/.env.test` configuration is reserved for integration testing and must never be used for normal development or production database connections.
 
 ## 5. Database Schema
 
