@@ -34,11 +34,33 @@ These tests execute against a real PostgreSQL instance. They are not substitutes
 
 The suite currently verifies database connectivity, restricted privileges, fixture safety, tenant isolation, staff membership authorization, customer profile isolation, tenant lifecycle restrictions, and security configuration.
 
+### Express API unit tests
+
+The Express API unit test suite is implemented in `apps/server/test/unit/`.
+
+The suite currently contains seven test files with 27 passing tests:
+
+- `env.test.ts`: 9 tests.
+- `env-security.test.ts`: 4 tests.
+- `lifecycle.test.ts`: 4 tests.
+- `lifecycle-state.test.ts`: 2 tests.
+- `lifecycle-failures.test.ts`: 4 tests.
+- `lifecycle-http.test.ts`: 1 test.
+- `shutdown-deadline.test.ts`: 3 tests.
+
+Coverage includes HTTP configuration validation, environment-security checks, lifecycle coordination, startup and cleanup failures, HTTP connection shutdown, and shutdown deadline behavior.
+
+These tests use isolated dependencies, local HTTP servers where appropriate, and fake timers. They do not require a PostgreSQL test database.
+
+The compiled API has undergone separate manual process-level verification for restricted PostgreSQL startup, HTTP responses, graceful termination, and startup failures. The compiled shutdown-deadline helper was separately verified in an isolated child process that exited with code 1 when its deadline expired.
+
+These tests establish the API infrastructure foundation. They do not establish business-route authentication, authorization, or tenant isolation coverage.
+
 ### Other test layers
 
-The current implementation establishes the database integration suite.
+Business API integration tests, frontend component tests, background-worker tests, and end-to-end tests remain future work.
 
-Unit tests, API integration tests, frontend component tests, background-worker tests, and end-to-end tests remain future work unless subsequently implemented and verified.
+Additional unit tests will be introduced as application services and business features are implemented.
 
 Each additional test layer should have a clear purpose and appropriate isolation strategy.
 
@@ -66,6 +88,19 @@ Configuration: `packages/database/tsconfig.test.json`
 
 The configuration includes database source files, integration tests, and the Vitest configuration. It enables type checking without emitting compiled files.
 
+### Express API testing configuration
+
+The Express API uses a separate Vitest configuration at `apps/server/vitest.config.ts`.
+
+- Environment: Node.js.
+- Included files: `test/unit/**/*.test.ts`.
+- Watch mode: disabled.
+- PostgreSQL and Redis are not required.
+
+The Express test TypeScript configuration is `apps/server/tsconfig.test.json`. It includes application source files, unit tests, and the Vitest configuration without emitting compiled files.
+
+The production TypeScript configuration and test TypeScript configuration serve different purposes. Both must be checked to verify application code and tests.
+
 ### Package scripts
 
 The root `package.json` exposes these commands:
@@ -74,6 +109,8 @@ The root `package.json` exposes these commands:
 |---|---|
 | `pnpm test` | Run workspace test tasks through Turborepo |
 | `pnpm test:integration` | Run the database integration suite |
+| `pnpm --filter @lara/server test` | Run Express API unit tests without PostgreSQL |
+| `pnpm --filter @lara/server check-types:test` | Type-check Express source, unit tests, and Vitest configuration |
 | `pnpm --filter @lara/database test` | Run the database package test suite directly |
 | `pnpm --filter @lara/database exec tsc --project tsconfig.test.json --noEmit --pretty false` | Type-check the database source and integration tests |
 
@@ -300,12 +337,14 @@ Node.js follows `.nvmrc`. pnpm uses the repository configuration and installs de
 4. Build participating workspaces.
 5. Run workspace TypeScript checks.
 6. Type-check PostgreSQL integration tests.
-7. Generate temporary PostgreSQL credentials.
-8. Start the existing Docker Compose test infrastructure.
-9. Wait for PostgreSQL readiness.
-10. Execute protected Drizzle migrations.
-11. Run PostgreSQL integration tests.
-12. Clean up disposable CI infrastructure.
+7. Type-check Express API unit tests.
+8. Run Express API unit tests.
+9. Generate temporary PostgreSQL credentials.
+10. Start the existing Docker Compose test infrastructure.
+11. Wait for PostgreSQL readiness.
+12. Execute protected Drizzle migrations.
+13. Run PostgreSQL integration tests.
+14. Clean up disposable CI infrastructure.
 
 ### Shared PostgreSQL provisioning
 
@@ -370,13 +409,28 @@ The remote Vitest report confirms 13 passing test files and 19 passing tests, wi
 
 The GitHub Actions run was reported successful, with all workflow steps green. Remote CI verification is complete for this milestone.
 
+### Chapter 21 verification — October 20, 2026
+
+The Express API foundation passed local verification:
+
+- Seven unit test files and 27 passing tests.
+- Production and test-specific TypeScript checks.
+- Production TypeScript build.
+- Compiled API startup, HTTP response, and graceful shutdown checks against the development database using restricted application credentials.
+- Isolated forced-termination verification for the compiled shutdown-deadline helper.
+- Local execution of the two new GitHub Actions commands.
+
+The CI workflow now checks Express test TypeScript and runs API unit tests before provisioning PostgreSQL.
+
+Remote GitHub Actions verification of these Chapter 21 changes remains pending. The successful October 18, 2026 CI run documented above applies to the earlier database milestone.
+
 ### Current limitations
 
 Only workspaces defining the corresponding build, type-check, or test scripts participate in those checks.
 
-Current automated integration coverage focuses on PostgreSQL security and tenant isolation.
+Current automated integration coverage focuses on PostgreSQL security and tenant isolation. Express infrastructure unit tests are implemented separately.
 
-Additional API, frontend, worker, and end-to-end tests remain future work.
+Business API integration tests, frontend component tests, background-worker tests, and end-to-end tests remain future work.
 
 ## 9. Current Gaps and Future Coverage
 

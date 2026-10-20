@@ -41,6 +41,12 @@ jobs:
             --noEmit \
             --pretty false
 
+      - name: Check API test TypeScript
+        run: pnpm --filter @lara/server check-types:test
+
+      - name: Run API unit tests
+        run: pnpm --filter @lara/server test
+
       - name: Generate test database credentials
         shell: bash
         run: |

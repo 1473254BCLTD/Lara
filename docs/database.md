@@ -222,7 +222,9 @@ The Express API and background worker must use lara_app.
 
 ### Application runtime configuration
 
-The Express API and background worker are designed to run as independent native Node.js processes. Once implemented, each must create a process-scoped database runtime using `@lara/database` and close its own connections during shutdown.
+The Express API is implemented as a native Node.js process. It initializes its own database runtime through `@lara/database`, verifies that PostgreSQL connections use the restricted `lara_app` role without superuser or RLS bypass privileges, and closes PostgreSQL resources during graceful shutdown after closing its HTTP listener.
+
+The background worker is an established architectural decision but is not yet implemented. It will run as an independent native Node.js process, initialize its own `@lara/database` runtime using `lara_app`, and manage its own database connections and shutdown. The API and worker must not share application bootstraps or process lifecycles.
 
 Application processes must not execute database migrations during startup. Migrations remain separate operations using `lara_migrator`.
 

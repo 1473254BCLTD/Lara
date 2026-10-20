@@ -3,7 +3,21 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check-types": "tsc --noEmit -p tsconfig.json",
+    "check-types:test": "tsc --noEmit -p tsconfig.test.json",
+    "test": "vitest run --config vitest.config.ts"
+  },
   "devDependencies": {
-    "@lara/typescript-config": "workspace:*"
+    "@lara/typescript-config": "workspace:*",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "vitest": "5.0.5"
+  },
+  "dependencies": {
+    "@lara/database": "workspace:*",
+    "express": "^5.3.0",
+    "zod": "4.6.7"
   }
 }

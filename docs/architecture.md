@@ -88,13 +88,42 @@ Server-specific runtime configuration belongs to the Express application. Worker
 
 ## 4. Runtime and Component Boundaries
 
+### Backend module organization
+
+Backend applications follow feature-based organization with separation of concerns. Business domains such as customers, bookings, passes, and authentication contain their relevant layers.
+
+- Routes define HTTP endpoints and attach middleware to controllers.
+- Controllers handle HTTP requests and responses while delegating business operations to services.
+- Services implement business workflows, application authorization, and transaction coordination.
+- Repositories encapsulate persistence operations using Drizzle and `@lara/database`. Tenant-scoped queries must use the appropriately authorized transaction context.
+- Shared API middleware handles cross-cutting HTTP responsibilities such as authentication, validation, and error handling.
+- Background workers use job handlers or processors rather than Express controllers. Job payloads do not independently establish authorization.
+- General utilities remain separate from business-specific responsibilities.
+
+Services must establish trusted actor and tenant authorization before invoking tenant-scoped database operations. Controllers and repositories must not bypass these checks.
+
+The API and worker may share contracts and infrastructure packages but must not import each others application bootstrap. Extract reusable business logic into an appropriate shared package only when a demonstrated need exists.
+
+Introduce layers only when their responsibilities justify them. Prefer repository terminology for database persistence and storage terminology for file or object storage.
+
 ### API server
 
-The Express.js API is the central backend boundary for application requests.
+The Express 5 API is the central backend boundary for application requests.
 
-It is responsible for validating incoming data, authenticating requests, enforcing application-level authorization, and coordinating database operations.
+The implemented foundation resides in `apps/server/src/`:
 
-The frontend must not be treated as an authorization boundary.
+- `app.ts` creates the Express application and disables the `X-Powered-By` header.
+- `env.ts` validates HTTP runtime configuration with Zod.
+- `database-startup.ts` initializes `@lara/database` using the restricted `lara_app` role, verifies the actual PostgreSQL role is not a superuser and cannot bypass RLS, and closes resources on initialization failure.
+- `lifecycle.ts` coordinates database initialization, HTTP startup, and resource cleanup. Graceful shutdown closes HTTP connections before PostgreSQL resources.
+- `shutdown-deadline.ts` manages shutdown deadline timing.
+- `server.ts` owns operating-system signals, logging, exit status, and the 10-second shutdown deadline.
+
+HTTP listening begins only after successful database initialization. API startup never executes database migrations. Each API process owns its database runtime and HTTP listener.
+
+Business routes, authentication, application authorization middleware, and tenant workflows are not yet implemented. Future endpoints must validate input, authenticate actors, enforce server-side authorization, and use authorized transaction-local tenant context.
+
+The frontend, Zod validation, and PostgreSQL RLS do not independently establish application authorization.
 
 ### Frontend applications
 
@@ -300,6 +329,10 @@ The current database foundation includes:
 - Transaction-local tenant security context.
 - RLS policies and security helper functions.
 - Automated PostgreSQL integration tests.
+
+The Express API foundation is implemented and locally verified. It includes validated runtime configuration, restricted PostgreSQL initialization, lifecycle coordination, graceful shutdown, and bounded shutdown timing.
+
+The API has 27 passing automated unit tests across seven files. Production and test TypeScript checks and the production build have passed locally. GitHub Actions now includes API unit tests and test-specific TypeScript validation, but these workflow changes have not yet been verified by a remote CI run.
 
 The broader product still requires implementation of additional capabilities, including staff and customer authentication workflows, bookings, passes, administrative APIs, payment integrations, and background job processing.
 
