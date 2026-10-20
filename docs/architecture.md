@@ -332,7 +332,7 @@ The current database foundation includes:
 
 The Express API foundation is implemented and locally verified. It includes validated runtime configuration, restricted PostgreSQL initialization, lifecycle coordination, graceful shutdown, and bounded shutdown timing.
 
-The API has 27 passing automated unit tests across seven files. Production and test TypeScript checks and the production build have passed locally. GitHub Actions now includes API unit tests and test-specific TypeScript validation, but these workflow changes have not yet been verified by a remote CI run.
+The API has 27 passing automated unit tests across seven files. Production and test TypeScript checks and the production build have passed locally. GitHub Actions includes API unit tests and test-specific TypeScript validation. The updated workflow passed on `develop` on October 20, 2026, for commit `b9b586b`, with 27 Express unit tests and 19 PostgreSQL integration tests passing. See [testing.md](./testing.md) for the verified CI run.
 
 The broader product still requires implementation of additional capabilities, including staff and customer authentication workflows, bookings, passes, administrative APIs, payment integrations, and background job processing.
 

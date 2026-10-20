@@ -422,7 +422,18 @@ The Express API foundation passed local verification:
 
 The CI workflow now checks Express test TypeScript and runs API unit tests before provisioning PostgreSQL.
 
-Remote GitHub Actions verification of these Chapter 21 changes remains pending. The successful October 18, 2026 CI run documented above applies to the earlier database milestone.
+GitHub Actions CI completed successfully on `develop` on October 20, 2026, for commit `b9b586b`.
+
+Verified remote results:
+
+- Express API unit tests: 7 files and 27 passing tests.
+- PostgreSQL integration tests: 13 files and 19 passing tests.
+- Combined automated tests: 20 files and 46 passing tests.
+- GitHub Actions `checks` job: successful.
+
+GitHub Actions run: https://github.com/1473254BCLTD/Lara/actions/runs/39424108705
+
+The October 18, 2026 CI verification above remains the historical record for the earlier database milestone.
 
 ### Current limitations
 
