@@ -53,7 +53,7 @@ Coverage includes HTTP configuration validation, environment-security checks, li
 
 These tests use isolated dependencies, local HTTP servers where appropriate, and fake timers. They do not require a PostgreSQL test database.
 
-Chapter 22 adds HTTP tests for structured 404 responses, synchronous and asynchronous 500 errors, sensitive-error masking, and delegation after response headers have been sent. On October 21, 2026, all 31 Express tests passed locally across eight files. Workspace build, workspace TypeScript checks, and Express test TypeScript checks also passed. Chapter 22 CI verification remains pending.
+Chapter 22 adds HTTP tests for structured 404 responses, synchronous and asynchronous 500 errors, sensitive-error masking, and delegation after response headers have been sent. On October 21, 2026, all 31 Express tests passed locally across eight files. Workspace build, workspace TypeScript checks, and Express test TypeScript checks also passed. Chapter 22 CI passed on October 21, 2026; see the verification record in Section 8.
 
 The compiled API has undergone separate manual process-level verification for restricted PostgreSQL startup, HTTP responses, graceful termination, and startup failures. The compiled shutdown-deadline helper was separately verified in an isolated child process that exited with code 1 when its deadline expired.
 
@@ -437,6 +437,18 @@ Verified remote results:
 GitHub Actions run: https://github.com/1473254BCLTD/Lara/actions/runs/39424108705
 
 The October 18, 2026 CI verification above remains the historical record for the earlier database milestone.
+
+### Chapter 22 verification — October 21, 2026
+
+GitHub Actions CI passed on `develop` for commit `99caf74`.
+
+- Express unit tests: 8 files, 31 tests passed.
+- PostgreSQL integration tests: 13 files, 19 tests passed.
+- Combined: 21 files, 50 tests passed.
+- Workspace build: 3 successful tasks.
+- Workspace TypeScript: 3 successful tasks.
+
+GitHub Actions run: https://github.com/1473254BCLTD/Lara/actions/runs/39612881492
 
 ### Current limitations
 
