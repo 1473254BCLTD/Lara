@@ -38,7 +38,7 @@ The suite currently verifies database connectivity, restricted privileges, fixtu
 
 The Express API unit test suite is implemented in `apps/server/test/unit/`.
 
-The suite currently contains seven test files with 27 passing tests:
+The suite currently contains eight test files with 31 passing tests:
 
 - `env.test.ts`: 9 tests.
 - `env-security.test.ts`: 4 tests.
@@ -47,10 +47,13 @@ The suite currently contains seven test files with 27 passing tests:
 - `lifecycle-failures.test.ts`: 4 tests.
 - `lifecycle-http.test.ts`: 1 test.
 - `shutdown-deadline.test.ts`: 3 tests.
+- `http-errors.test.ts`: 4 tests.
 
 Coverage includes HTTP configuration validation, environment-security checks, lifecycle coordination, startup and cleanup failures, HTTP connection shutdown, and shutdown deadline behavior.
 
 These tests use isolated dependencies, local HTTP servers where appropriate, and fake timers. They do not require a PostgreSQL test database.
+
+Chapter 22 adds HTTP tests for structured 404 responses, synchronous and asynchronous 500 errors, sensitive-error masking, and delegation after response headers have been sent. On October 21, 2026, all 31 Express tests passed locally across eight files. Workspace build, workspace TypeScript checks, and Express test TypeScript checks also passed. Chapter 22 CI verification remains pending.
 
 The compiled API has undergone separate manual process-level verification for restricted PostgreSQL startup, HTTP responses, graceful termination, and startup failures. The compiled shutdown-deadline helper was separately verified in an isolated child process that exited with code 1 when its deadline expired.
 

@@ -16,6 +16,7 @@
     "vitest": "5.0.5"
   },
   "dependencies": {
+    "@lara/contracts": "workspace:*",
     "@lara/database": "workspace:*",
     "express": "^5.3.0",
     "zod": "4.6.7"

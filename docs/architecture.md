@@ -112,7 +112,8 @@ The Express 5 API is the central backend boundary for application requests.
 
 The implemented foundation resides in `apps/server/src/`:
 
-- `app.ts` creates the Express application and disables the `X-Powered-By` header.
+- `app.ts` creates Express, disables `X-Powered-By`, and registers shared HTTP middleware.
+- `middleware/http-errors.ts` handles unmatched routes and unexpected HTTP errors.
 - `env.ts` validates HTTP runtime configuration with Zod.
 - `database-startup.ts` initializes `@lara/database` using the restricted `lara_app` role, verifies the actual PostgreSQL role is not a superuser and cannot bypass RLS, and closes resources on initialization failure.
 - `lifecycle.ts` coordinates database initialization, HTTP startup, and resource cleanup. Graceful shutdown closes HTTP connections before PostgreSQL resources.
@@ -122,6 +123,12 @@ The implemented foundation resides in `apps/server/src/`:
 HTTP listening begins only after successful database initialization. API startup never executes database migrations. Each API process owns its database runtime and HTTP listener.
 
 Business routes, authentication, application authorization middleware, and tenant workflows are not yet implemented. Future endpoints must validate input, authenticate actors, enforce server-side authorization, and use authorized transaction-local tenant context.
+
+HTTP errors follow the shared `@lara/contracts` response structure: `{ error: { code, message } }`. Unmatched routes return HTTP 404 (`NOT_FOUND`), while unexpected errors return HTTP 500 (`INTERNAL_ERROR`) without exposing internal exception details.
+
+Feature routes must precede the not-found handler, and centralized error handling must be registered last. Errors occurring after response headers are sent are delegated to Express. Unexpected errors are currently logged server-side; structured logging and sensitive-data redaction remain future work.
+
+Request-validation middleware, expected client-error mapping, authentication, and tenant authorization are not yet implemented.
 
 The frontend, Zod validation, and PostgreSQL RLS do not independently establish application authorization.
 
