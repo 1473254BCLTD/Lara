@@ -38,7 +38,7 @@ The suite currently verifies database connectivity, restricted privileges, fixtu
 
 The Express API unit test suite is implemented in `apps/server/test/unit/`.
 
-The suite currently contains ten test files with 44 passing tests:
+The suite currently contains 12 test files with 86 locally passing tests:
 
 - `env.test.ts`: 9 tests.
 - `env-security.test.ts`: 4 tests.
@@ -47,11 +47,17 @@ The suite currently contains ten test files with 44 passing tests:
 - `lifecycle-failures.test.ts`: 4 tests.
 - `lifecycle-http.test.ts`: 1 test.
 - `shutdown-deadline.test.ts`: 3 tests.
-- `http-errors.test.ts`: 4 tests.
+- `http-errors.test.ts`: 11 tests.
 - `json-parsing.test.ts`: 5 tests.
 - `validate-body.test.ts`: 8 tests.
+- `validate-query.test.ts`: 18 tests.
+- `validate-params.test.ts`: 17 tests.
 
 Coverage includes HTTP configuration validation, environment-security checks, lifecycle coordination, startup and cleanup failures, HTTP connection shutdown, shutdown deadlines, structured HTTP errors, strict JSON parsing, malformed JSON and top-level primitive rejection, request body size limits, unsupported JSON charset handling, Zod validation, asynchronous refinements, transformed handler inputs, missing request bodies, media-type enforcement, and masking of internal error details.
+
+Query validation tests cover numeric transformations and bounds, defaults for absent values, decoded keys and values, empty and whitespace-only values, repeated scalar parameters, bracket notation, schema-controlled rejection of unknown keys, asynchronous refinements, handler suppression on invalid input, unchanged raw query values, and safe handler-error responses. The test schema requires a scalar decimal string before numeric conversion; its strict-key policy and numeric bounds are test-specific rather than rules imposed by the wrapper.
+
+Route validation tests cover UUID validation and normalization, decoded strings, typed numeric transformations, asynchronous refinements, wildcard arrays and bounds, encoded slashes within wildcard segments, rejection of arrays by scalar schemas, unchanged raw parameters, handler suppression on invalid input, and safe synchronous and asynchronous handler-error responses. HTTP error tests also cover malformed route encoding and ensure that unrelated URI or status-bearing errors remain internal errors.
 
 These tests use isolated dependencies, local HTTP servers where appropriate, and fake timers. They do not require a PostgreSQL test database.
 
@@ -467,6 +473,28 @@ Local verification passed for the request-parsing and Zod-validation changes:
 
 GitHub Actions CI passed on October 22, 2026, for commit `0c91a90`. The run verified 44 Express unit tests across 10 files and 19 PostgreSQL integration tests across 13 files, for 63 tests across 23 files. Workspace build and TypeScript checks each completed with 3 successful tasks. Express test TypeScript validation and PostgreSQL integration-test TypeScript validation also passed. GitHub Actions run: https://github.com/1473254BCLTD/Lara/actions/runs/39772039899.
 
+### Chapter 23 query and route parameter validation — October 22, 2026
+
+Local verification passed for the query and route validation wrappers and malformed route-encoding error handling:
+
+- `pnpm --filter @lara/server test`: 12 files, 86 tests passed.
+- `pnpm --filter @lara/server check-types`: passed.
+- `pnpm --filter @lara/server check-types:test`: passed.
+- `pnpm build`: three successful tasks; contracts and database reused local cached results, while the server build executed.
+- `pnpm check-types`: three successful tasks; contracts and database reused local cached results, while the server TypeScript check executed.
+- `pnpm --filter @lara/database exec tsc --project tsconfig.test.json --noEmit --pretty false`: passed.
+- `pnpm test:integration`: 13 files, 19 tests passed against the isolated `lara_test` database.
+- Combined Express and PostgreSQL results: 25 files, 105 tests passed.
+- Git whitespace check for the tracked changes: passed; each new test file was also checked separately with no whitespace diagnostics.
+
+Four HTTP regression cases reproduced the earlier 500 response for a bare percent sign, an incomplete UTF-8 sequence, an invalid UTF-8 byte, and a malformed wildcard segment. After the middleware change, all four return HTTP 400 with the existing safe `VALIDATION_ERROR` contract before route-handler execution. Three additional cases confirm that a plain `URIError`, an ordinary error with status 400, and a `URIError` with another status still return a safe 500.
+
+The HTTP tests open temporary listeners on `127.0.0.1`. The first run in a restricted execution sandbox failed with `listen EPERM`; rerunning with local-listener permission passed. The tests require no PostgreSQL or Redis service.
+
+Before the integration run, read-only inspection verified the configured `127.0.0.1:5433` destination, the actual `lara_test` database marker `lara:integration-test-only:v1`, and the restricted role attributes. Both `lara_app` and `lara_migrator` lacked superuser and RLS-bypass privileges, and `lara_app` was not a member of `lara_migrator`. The suite then passed using its existing independent identity, role, and fixture safeguards. The PostgreSQL test service was already running and remained healthy afterward; its existing container and persistent volume were retained.
+
+GitHub Actions CI verification is pending. The Chapter 22 CI results above are historical and do not verify these uncommitted changes.
+
 ### Current limitations
 
 Only workspaces defining the corresponding build, type-check, or test scripts participate in those checks.
@@ -477,12 +505,12 @@ Business API integration tests, frontend component tests, background-worker test
 
 ## 9. Current Gaps and Future Coverage
 
-The current suite focuses on the database security foundation. It does not establish complete application-level coverage.
+Current coverage establishes the database security foundation and Express infrastructure behavior. It does not establish complete application-level coverage.
 
 Future work includes:
 
 - Unit tests for shared utilities and application logic.
-- Express API tests for authentication, authorization, validation, and error handling.
+- Business-route tests for authentication, authorization, validation, and error handling.
 - Customer authentication and staff authentication workflow tests.
 - Frontend tests for administrative and customer-facing applications.
 - Background-worker tests for email and webhook processing.

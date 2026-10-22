@@ -66,7 +66,11 @@ export const errorHandler: ErrorRequestHandler = (
     return;
   }
 
-  if (error instanceof RequestValidationError) {
+  // Express's router marks malformed route decoding with URIError/status 400.
+  const isRouteDecodingError =
+    error instanceof URIError && "status" in error && error.status === 400;
+
+  if (error instanceof RequestValidationError || isRouteDecodingError) {
     const body: HttpErrorResponse = {
       error: {
         code: "VALIDATION_ERROR",

@@ -139,6 +139,105 @@ describe("HTTP error handling", () => {
     },
   );
 
+  it.each([
+    { name: "a bare percent sign", route: "/items/:id", path: "/items/%" },
+    {
+      name: "an incomplete UTF-8 sequence",
+      route: "/items/:id",
+      path: "/items/%E0%A4%A",
+    },
+    { name: "an invalid UTF-8 byte", route: "/items/:id", path: "/items/%FF" },
+    {
+      name: "a malformed wildcard segment",
+      route: "/files/*segments",
+      path: "/files/one/%",
+    },
+  ])("returns a safe 400 for $name", async ({ route, path }) => {
+    const app = express();
+    const handler = vi.fn((_request: Request, response: Response) => {
+      response.json({ ok: true });
+    });
+
+    app.get(route, handler);
+    app.use(errorHandler);
+
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+    const server = app.listen(0, "127.0.0.1");
+
+    try {
+      await once(server, "listening");
+      const address = server.address();
+
+      if (!address || typeof address === "string") {
+        throw new Error("Unexpected HTTP server address");
+      }
+
+      const response = await fetch(`http://127.0.0.1:${address.port}${path}`, {
+        headers: { Connection: "close" },
+        signal: AbortSignal.timeout(4000),
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.headers.get("content-type")).toContain("application/json");
+
+      const responseText = await response.text();
+      expect(responseText).not.toContain("Failed to decode param");
+      expect(responseText).not.toContain(path);
+      const body = httpErrorResponseSchema.parse(JSON.parse(responseText));
+
+      expect(body).toEqual({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Invalid request data",
+        },
+      });
+      expect(handler).not.toHaveBeenCalled();
+      expect(errorLog).not.toHaveBeenCalled();
+    } finally {
+      server.closeAllConnections();
+
+      await new Promise<void>((resolve) => {
+        server.close(() => resolve());
+      });
+
+      errorLog.mockRestore();
+    }
+  });
+
+  it.each([
+    { name: "a URIError without status", error: new URIError("private-uri-detail") },
+    {
+      name: "an ordinary error carrying status 400",
+      error: Object.assign(new Error("private-status-detail"), { status: 400 }),
+    },
+    {
+      name: "a URIError carrying another status",
+      error: Object.assign(new URIError("private-other-status-detail"), { status: 500 }),
+    },
+  ])("preserves a safe 500 for $name", ({ error }) => {
+    const status = vi.fn().mockReturnThis();
+    const json = vi.fn();
+    const next = vi.fn();
+    const response = { headersSent: false, status, json } as unknown as Response;
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    try {
+      errorHandler(error, {} as Request, response, next);
+
+      expect(status).toHaveBeenCalledWith(500);
+      expect(json).toHaveBeenCalledWith({
+        error: {
+          code: "INTERNAL_ERROR",
+          message: "Internal server error",
+        },
+      });
+      expect(errorLog).toHaveBeenCalledWith("Unhandled API error:", error);
+      expect(next).not.toHaveBeenCalled();
+    } finally {
+      errorLog.mockRestore();
+    }
+  });
+
   it("delegates errors after response headers are sent", () => {
     const error = new Error("Connection interrupted");
 

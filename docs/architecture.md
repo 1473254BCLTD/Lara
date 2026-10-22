@@ -114,6 +114,8 @@ The implemented foundation resides in `apps/server/src/`:
 
 - `app.ts` creates Express, disables `X-Powered-By`, and registers strict JSON parsing with a 64 KiB body limit.
 - `middleware/validate-body.ts` validates JSON request bodies with Zod and passes typed, transformed results to handlers.
+- `middleware/validate-query.ts` validates parsed query parameters with Zod and passes typed, transformed results to handlers.
+- `middleware/validate-params.ts` validates decoded route parameters with Zod and passes typed, transformed results to handlers.
 - `middleware/http-errors.ts` handles unmatched routes, recognized client errors, and unexpected HTTP errors.
 - `env.ts` validates HTTP runtime configuration with Zod.
 - `database-startup.ts` initializes `@lara/database` using the restricted `lara_app` role, verifies the actual PostgreSQL role is not a superuser and cannot bypass RLS, and closes resources on initialization failure.
@@ -133,7 +135,15 @@ JSON request parsing uses strict object/array parsing with a 64 KiB body limit. 
 
 Recognized client errors include `INVALID_JSON` (400), `VALIDATION_ERROR` (400), `PAYLOAD_TOO_LARGE` (413), and `UNSUPPORTED_MEDIA_TYPE` (415). JSON-only handlers enforce the expected media type. Missing required request bodies are rejected through Zod validation.
 
-Authentication, tenant authorization, query-parameter validation, route-parameter validation, and business endpoints are not yet implemented. Valid input does not establish authorization.
+The `withValidatedQuery()` and `withValidatedParams()` wrappers follow the body wrapper's asynchronous validation pattern. Each uses `safeParseAsync()` and passes `z.output<TSchema>` directly to its handler. Invalid input produces the existing HTTP 400 `VALIDATION_ERROR` response before handler execution; unexpected validation-code or handler exceptions propagate to centralized error handling. Query and route validation do not require a JSON content type.
+
+The application inherits Express 5's default simple query parser. A single query value is a string, repeated keys produce arrays, and bracket notation remains a literal key rather than creating nested objects. The query property is a getter. Ordinary named route parameters are decoded strings, while named wildcard parameters are arrays of decoded segments. The wrappers validate the supplied values without replacing `request.query` or `request.params` or decoding them again.
+
+Schemas define endpoint-specific rules for optional values, defaults, unknown keys, array handling, UUID formats, and transformations. Scalar numeric schemas should validate a single string and its permitted syntax before conversion, then enforce numeric bounds. Empty strings and repeated values must not be silently treated as missing values. Shared endpoint contracts belong in `@lara/contracts`; the current demonstration schemas and routes exist only in tests. Business routes have not yet been added to `createApp()`.
+
+Malformed route encoding fails inside Express routing before a validation wrapper can run. The error handler recognizes `URIError` with numeric status 400 and returns the same safe `VALIDATION_ERROR` response without exposing the decoding error or requested path. A plain `URIError` without that status, or an ordinary error carrying status 400, retains the generic 500 response.
+
+Authentication, tenant authorization, and business endpoints are not yet implemented. Valid input, including a valid tenant UUID, does not establish authorization.
 
 The frontend, Zod validation, and PostgreSQL RLS do not independently establish application authorization.
 
@@ -344,7 +354,9 @@ The current database foundation includes:
 
 The Express API foundation is implemented and locally verified. It includes validated runtime configuration, restricted PostgreSQL initialization, lifecycle coordination, graceful shutdown, and bounded shutdown timing.
 
-The API currently has 44 locally passing unit tests across ten files. The PostgreSQL integration suite has 19 passing tests across 13 files. On October 22, 2026, the workspace build, TypeScript checks, and both test suites passed locally, totaling 63 tests across 23 files. The previous HTTP error-handling milestone passed GitHub Actions on October 21, 2026, for commit `99caf74`. The request-validation follow-up passed GitHub Actions CI on October 22, 2026, for commit `0c91a90`, with 44 Express unit tests and 19 PostgreSQL integration tests passing. See [testing.md](./testing.md) for the verified CI run and historical verification records.
+Chapter 23 query and route parameter validation passed local verification on October 22, 2026: 86 Express unit tests across 12 files and 19 PostgreSQL integration tests across 13 files, totaling 105 tests across 25 files. Server production and test TypeScript checks and the PostgreSQL integration-test TypeScript check also passed. Workspace build and TypeScript checks each completed with three successful tasks: contracts and database reused local cached results, while the server task executed. GitHub Actions CI verification remains pending for these changes.
+
+The previous Chapter 22 request-validation milestone passed GitHub Actions CI on October 22, 2026, for commit `0c91a90`, with 44 Express unit tests and 19 PostgreSQL integration tests passing. Those results remain the historical CI baseline. See [testing.md](./testing.md) for current verification status and earlier results.
 
 The broader product still requires implementation of additional capabilities, including staff and customer authentication workflows, bookings, passes, administrative APIs, payment integrations, and background job processing.
 
