@@ -112,8 +112,9 @@ The Express 5 API is the central backend boundary for application requests.
 
 The implemented foundation resides in `apps/server/src/`:
 
-- `app.ts` creates Express, disables `X-Powered-By`, and registers shared HTTP middleware.
-- `middleware/http-errors.ts` handles unmatched routes and unexpected HTTP errors.
+- `app.ts` creates Express, disables `X-Powered-By`, and registers strict JSON parsing with a 64 KiB body limit.
+- `middleware/validate-body.ts` validates JSON request bodies with Zod and passes typed, transformed results to handlers.
+- `middleware/http-errors.ts` handles unmatched routes, recognized client errors, and unexpected HTTP errors.
 - `env.ts` validates HTTP runtime configuration with Zod.
 - `database-startup.ts` initializes `@lara/database` using the restricted `lara_app` role, verifies the actual PostgreSQL role is not a superuser and cannot bypass RLS, and closes resources on initialization failure.
 - `lifecycle.ts` coordinates database initialization, HTTP startup, and resource cleanup. Graceful shutdown closes HTTP connections before PostgreSQL resources.
@@ -128,7 +129,11 @@ HTTP errors follow the shared `@lara/contracts` response structure: `{ error: { 
 
 Feature routes must precede the not-found handler, and centralized error handling must be registered last. Errors occurring after response headers are sent are delegated to Express. Unexpected errors are currently logged server-side; structured logging and sensitive-data redaction remain future work.
 
-Request-validation middleware, expected client-error mapping, authentication, and tenant authorization are not yet implemented.
+JSON request parsing uses strict object/array parsing with a 64 KiB body limit. The `withValidatedBody()` wrapper uses asynchronous Zod validation and passes parsed output directly to typed handlers. Invalid data is rejected before controller execution.
+
+Recognized client errors include `INVALID_JSON` (400), `VALIDATION_ERROR` (400), `PAYLOAD_TOO_LARGE` (413), and `UNSUPPORTED_MEDIA_TYPE` (415). JSON-only handlers enforce the expected media type. Missing required request bodies are rejected through Zod validation.
+
+Authentication, tenant authorization, query-parameter validation, route-parameter validation, and business endpoints are not yet implemented. Valid input does not establish authorization.
 
 The frontend, Zod validation, and PostgreSQL RLS do not independently establish application authorization.
 
@@ -339,7 +344,7 @@ The current database foundation includes:
 
 The Express API foundation is implemented and locally verified. It includes validated runtime configuration, restricted PostgreSQL initialization, lifecycle coordination, graceful shutdown, and bounded shutdown timing.
 
-The API has 27 passing automated unit tests across seven files. Production and test TypeScript checks and the production build have passed locally. GitHub Actions includes API unit tests and test-specific TypeScript validation. The updated workflow passed on `develop` on October 20, 2026, for commit `b9b586b`, with 27 Express unit tests and 19 PostgreSQL integration tests passing. See [testing.md](./testing.md) for the verified CI run.
+The API currently has 44 locally passing unit tests across ten files. The PostgreSQL integration suite has 19 passing tests across 13 files. On October 22, 2026, the workspace build, TypeScript checks, and both test suites passed locally, totaling 63 tests across 23 files. The previous HTTP error-handling milestone passed GitHub Actions on October 21, 2026, for commit `99caf74`. CI verification of the current request-validation changes is pending. See [testing.md](./testing.md) for historical and current verification records.
 
 The broader product still requires implementation of additional capabilities, including staff and customer authentication workflows, bookings, passes, administrative APIs, payment integrations, and background job processing.
 

@@ -38,7 +38,7 @@ The suite currently verifies database connectivity, restricted privileges, fixtu
 
 The Express API unit test suite is implemented in `apps/server/test/unit/`.
 
-The suite currently contains eight test files with 31 passing tests:
+The suite currently contains ten test files with 44 passing tests:
 
 - `env.test.ts`: 9 tests.
 - `env-security.test.ts`: 4 tests.
@@ -48,12 +48,14 @@ The suite currently contains eight test files with 31 passing tests:
 - `lifecycle-http.test.ts`: 1 test.
 - `shutdown-deadline.test.ts`: 3 tests.
 - `http-errors.test.ts`: 4 tests.
+- `json-parsing.test.ts`: 5 tests.
+- `validate-body.test.ts`: 8 tests.
 
-Coverage includes HTTP configuration validation, environment-security checks, lifecycle coordination, startup and cleanup failures, HTTP connection shutdown, and shutdown deadline behavior.
+Coverage includes HTTP configuration validation, environment-security checks, lifecycle coordination, startup and cleanup failures, HTTP connection shutdown, shutdown deadlines, structured HTTP errors, strict JSON parsing, malformed JSON and top-level primitive rejection, request body size limits, unsupported JSON charset handling, Zod validation, asynchronous refinements, transformed handler inputs, missing request bodies, media-type enforcement, and masking of internal error details.
 
 These tests use isolated dependencies, local HTTP servers where appropriate, and fake timers. They do not require a PostgreSQL test database.
 
-Chapter 22 adds HTTP tests for structured 404 responses, synchronous and asynchronous 500 errors, sensitive-error masking, and delegation after response headers have been sent. On October 21, 2026, all 31 Express tests passed locally across eight files. Workspace build, workspace TypeScript checks, and Express test TypeScript checks also passed. Chapter 22 CI passed on October 21, 2026; see the verification record in Section 8.
+The initial Chapter 22 HTTP error-handling milestone added structured 404 and 500 responses, sensitive-error masking, and delegation after response headers have been sent. Its 31 Express tests passed locally, and its CI verification passed on October 21, 2026. The subsequent request-parsing and validation work is recorded separately in Section 8.
 
 The compiled API has undergone separate manual process-level verification for restricted PostgreSQL startup, HTTP responses, graceful termination, and startup failures. The compiled shutdown-deadline helper was separately verified in an isolated child process that exited with code 1 when its deadline expired.
 
@@ -449,6 +451,21 @@ GitHub Actions CI passed on `develop` for commit `99caf74`.
 - Workspace TypeScript: 3 successful tasks.
 
 GitHub Actions run: https://github.com/1473254BCLTD/Lara/actions/runs/39612881492
+
+### Chapter 22 request validation follow-up — October 22, 2026
+
+Local verification passed for the request-parsing and Zod-validation changes:
+
+- Express unit tests: 10 files, 44 tests passed.
+- PostgreSQL integration tests: 13 files, 19 tests passed.
+- Combined: 23 files, 63 tests passed.
+- Workspace build: 3 successful tasks.
+- Workspace TypeScript: 3 successful tasks.
+- Express test TypeScript check: passed.
+- PostgreSQL integration-test TypeScript check: passed.
+- Git whitespace check: passed.
+
+GitHub Actions verification for these follow-up changes remains pending. The October 21 CI run above verifies the earlier HTTP error-handling milestone, not these subsequent changes.
 
 ### Current limitations
 

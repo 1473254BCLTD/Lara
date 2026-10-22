@@ -10,6 +10,9 @@ export function createApp() {
 
   app.disable("x-powered-by");
 
+  // Parse ordinary JSON requests before route handling.
+  app.use(express.json({ limit: 64 * 1024, strict: true }));
+
   // Feature routes will be registered here.
 
   // Handle unmatched requests.
