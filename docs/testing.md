@@ -493,7 +493,23 @@ The HTTP tests open temporary listeners on `127.0.0.1`. The first run in a restr
 
 Before the integration run, read-only inspection verified the configured `127.0.0.1:5433` destination, the actual `lara_test` database marker `lara:integration-test-only:v1`, and the restricted role attributes. Both `lara_app` and `lara_migrator` lacked superuser and RLS-bypass privileges, and `lara_app` was not a member of `lara_migrator`. The suite then passed using its existing independent identity, role, and fixture safeguards. The PostgreSQL test service was already running and remained healthy afterward; its existing container and persistent volume were retained.
 
-GitHub Actions CI verification is pending. The Chapter 22 CI results above are historical and do not verify these uncommitted changes.
+GitHub Actions CI passed on `develop` on October 22, 2026, for implementation commit `b8a9b51`.
+
+Verified remote results:
+
+- Express unit tests: 12 files, 86 tests passed.
+- PostgreSQL integration tests: 13 files, 19 tests passed.
+- Combined: 25 files, 105 tests passed.
+- Workspace build: three successful tasks.
+- Workspace TypeScript checks: three successful tasks.
+- Express test TypeScript and PostgreSQL integration-test TypeScript checks: passed.
+- Protected test database identity verification and migrations: passed.
+- CI PostgreSQL cleanup: passed.
+- GitHub Actions `checks` job: successful.
+
+GitHub Actions run: https://github.com/1473254BCLTD/Lara/actions/runs/39779583216.
+
+The Chapter 22 CI results above remain historical records for the earlier milestone.
 
 ### Current limitations
 
