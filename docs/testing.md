@@ -465,7 +465,7 @@ Local verification passed for the request-parsing and Zod-validation changes:
 - PostgreSQL integration-test TypeScript check: passed.
 - Git whitespace check: passed.
 
-GitHub Actions verification for these follow-up changes remains pending. The October 21 CI run above verifies the earlier HTTP error-handling milestone, not these subsequent changes.
+GitHub Actions CI passed on October 22, 2026, for commit `0c91a90`. The run verified 44 Express unit tests across 10 files and 19 PostgreSQL integration tests across 13 files, for 63 tests across 23 files. Workspace build and TypeScript checks each completed with 3 successful tasks. Express test TypeScript validation and PostgreSQL integration-test TypeScript validation also passed. GitHub Actions run: https://github.com/1473254BCLTD/Lara/actions/runs/39772039899.
 
 ### Current limitations
 
